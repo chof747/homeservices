@@ -1,0 +1,31 @@
+{% set device_list = room | default(['wssr'] )%}
+{% set rooms = device_list | join('", "') %}
+
+import "influxdata/influxdb/schema"
+
+humidity = from(bucket: "{{ influxBucket }}")
+  |> range(start: {{ timeRangeStart | default('-24h') }}, stop: {{ timeRangeEnd | default('now()') }})
+  |> filter(fn: (r) => r["_measurement"] == "Humidity")
+  |> filter(fn: (r) => contains(value: r["Device"], set: ["{{rooms}}"]))
+  |> aggregateWindow(every: {{ period | default('1m')}}, fn: mean, createEmpty: true)
+  |> fill(usePrevious: true)
+  |> schema.fieldsAsCols()
+  |> map(fn: (r) => ({ r with Temperatur_H: r.Temperatur }), mergeKey: true)
+  |> keep(columns: ["_time", "Luftfeuchtigkeit", "Temperatur_H" "Room"])
+
+temperature = from(bucket: "{{ influxBucket }}")
+  |> range(start: {{ timeRangeStart | default('-24h') }}, stop: {{ timeRangeEnd | default('now()') }})
+  |> filter(fn: (r) => r["_measurement"] == "Temperature")
+  |> filter(fn: (r) => contains(value: r["Device"], set: ["{{rooms}}"]))
+  |> filter(fn: (r) => r["Sensor"] == "ds18b20")
+  |> aggregateWindow(every: {{ period | default('1m')}}, fn: mean, createEmpty: true)
+  |> fill(usePrevious: true)
+  |> schema.fieldsAsCols()
+  |> keep(columns: ["_time", "Temperatur", "Room"])
+
+combined = join(
+  tables: {temp: temperature, hum: humidity},
+  on: ["_time", "Room"], // Join on time and device if needed
+  method: "inner" // Ensures only matching records are included
+)
+  |> yield(name: "combined")

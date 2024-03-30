@@ -1,0 +1,1 @@
+ uvicorn --env-file=./.env_dev --log-level debug --reload app.main:app --port 8000
