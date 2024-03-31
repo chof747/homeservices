@@ -9,6 +9,10 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # You may adjust the permissions as necessary for your workflow.
     steps:
       - uses: actions/checkout@v3
       
