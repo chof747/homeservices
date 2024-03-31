@@ -33,4 +33,4 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ghcr.io/chof747/homeservices:latest
-          platforms: linux/arm64, linux/arm/v7, aarch64
+          platforms: linux/arm64, aarch64
